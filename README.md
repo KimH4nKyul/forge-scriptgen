@@ -139,6 +139,21 @@ Reference files:
 - `tests/fixtures/repro/expected/`
 - `scripts/reproduce_complex_cli_demo.sh`
 
+## Contributing
+
+If you want to improve parsing coverage, CLI UX, fixtures, or generation quality, start here:
+
+- [CONTRIBUTING.md](/Users/kimh4nkyul/Projects/forge-scriptgen/CONTRIBUTING.md)
+- [architecture.md](/Users/kimh4nkyul/Projects/forge-scriptgen/docs/architecture.md)
+
+The fastest contributor loop is:
+
+```bash
+cargo fmt
+cargo test
+./scripts/reproduce_complex_cli_demo.sh
+```
+
 ## Security note
 
 `--private-key` embeds the private key literal directly into the generated script. Do not commit generated scripts that contain real keys. Use disposable values for local testing, or extend the workflow to environment-based key loading before using it in production.
