@@ -92,14 +92,3 @@ cargo run -- \
   --private-key 0x9999 \
   AdvancedCounter
 ```
-
-### Files Changed
-- [src/main.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/src/main.rs)
-- [tests/cli.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/cli.rs)
-- [AGENTS.md](/Users/kimh4nkyul/Projects/forge-scriptgen/AGENTS.md)
-- [scripts/reproduce_complex_cli_demo.sh](/Users/kimh4nkyul/Projects/forge-scriptgen/scripts/reproduce_complex_cli_demo.sh)
-- [README.md](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/README.md)
-- [ComplexDeployment.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/src/nested/ComplexDeployment.sol)
-- [CommentsAndStrings.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/src/CommentsAndStrings.sol)
-- [ComplexDeployment.s.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/expected/ComplexDeployment.s.sol)
-- [CommentsAndStrings.s.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/expected/CommentsAndStrings.s.sol)

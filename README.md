@@ -143,8 +143,8 @@ Reference files:
 
 If you want to improve parsing coverage, CLI UX, fixtures, or generation quality, start here:
 
-- [CONTRIBUTING.md](/Users/kimh4nkyul/Projects/forge-scriptgen/CONTRIBUTING.md)
-- [architecture.md](/Users/kimh4nkyul/Projects/forge-scriptgen/docs/architecture.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [architecture.md](./docs/architecture.md)
 
 The fastest contributor loop is:
 
