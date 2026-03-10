@@ -6,7 +6,7 @@
 This update moves the project toward the roadmap in `FUTURE_WORK.md`, with immediate emphasis on handling complex Solidity code more reliably and preparing the CLI for future parser backends.
 
 ### Parser Architecture
-- Introduced a parser abstraction layer in [src/main.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/src/main.rs).
+- Introduced a parser abstraction layer in [src/main.rs](./src/main.rs).
 - Added `ParserBackend` and `ContractParser` so contract discovery no longer depends directly on a single hard-coded parsing function.
 - Implemented `StringWalkerParser` as the current backend and routed discovery through `discover_contracts_with_parser(...)`.
 - Added CLI support for selecting a parser backend with `--parser string-walker`.
@@ -51,20 +51,20 @@ Why this matters:
 - Users can discover the complex-constructor path directly from `forge-scriptgen --help` without opening the README.
 
 ### Test Coverage Added
-- Added unit tests in [src/main.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/src/main.rs) for:
+- Added unit tests in [src/main.rs](./src/main.rs) for:
   - parser backend parsing
   - raw Solidity literal support in `--args`
   - complex contract parsing regression
-- Added an integration test in [tests/cli.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/cli.rs) that:
+- Added an integration test in [tests/cli.rs](./tests/cli.rs) that:
   - lists a contract with a complex constructor signature
   - generates a deployment script from mixed raw and JSON string arguments
   - verifies the final constructor call in the generated script
 
 ### Reproducible CLI fixtures
-- Added persistent Solidity fixtures under [tests/fixtures/repro/src](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/src) so the manual complex-contract validation can be reproduced without relying on temporary files.
-- Added expected generated script outputs under [tests/fixtures/repro/expected](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/expected).
-- Added an end-to-end reproduction script at [scripts/reproduce_complex_cli_demo.sh](/Users/kimh4nkyul/Projects/forge-scriptgen/scripts/reproduce_complex_cli_demo.sh).
-- Added fixture usage notes in [README.md](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/README.md).
+- Added persistent Solidity fixtures under [tests/fixtures/repro/src](./tests/fixtures/repro/src) so the manual complex-contract validation can be reproduced without relying on temporary files.
+- Added expected generated script outputs under [tests/fixtures/repro/expected](./tests/fixtures/repro/expected).
+- Added an end-to-end reproduction script at [scripts/reproduce_complex_cli_demo.sh](./scripts/reproduce_complex_cli_demo.sh).
+- Added fixture usage notes in [README.md](./tests/fixtures/repro/README.md).
 
 What the reproduction script does:
 - prints the complex Solidity source fixtures
