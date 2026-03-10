@@ -98,3 +98,71 @@ contract Counter {
 
     Ok(())
 }
+
+#[test]
+fn generates_script_for_complex_constructor_signatures() -> Result<(), Box<dyn Error>> {
+    let project = TempDir::new()?;
+    let src_dir = project.child("src");
+    src_dir.create_dir_all()?;
+
+    write_contract(
+        &src_dir,
+        "AdvancedCounter.sol",
+        r#"// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+abstract contract BaseDeployer {
+    constructor(address admin) {}
+}
+
+contract AdvancedCounter is BaseDeployer {
+    struct Config {
+        address owner;
+        uint256[] limits;
+    }
+
+    constructor(
+        Config memory config,
+        function(address, uint256[] memory) external returns (bytes32) callback,
+        string memory label
+    ) BaseDeployer(config.owner) payable {}
+}
+"#,
+    )?;
+
+    let mut list_cmd = Command::cargo_bin("forge-scriptgen")?;
+    list_cmd.current_dir(project.path());
+    list_cmd.args(["--parser", "string-walker", "--list"]);
+    list_cmd
+        .assert()
+        .success()
+        .stdout(contains("AdvancedCounter (src/AdvancedCounter.sol)"))
+        .stdout(contains("Config memory config"))
+        .stdout(contains("callback"))
+        .stdout(contains("string memory label"));
+
+    let mut generate_cmd = Command::cargo_bin("forge-scriptgen")?;
+    generate_cmd.current_dir(project.path());
+    generate_cmd.args([
+        "--parser",
+        "string-walker",
+        "--args",
+        r#"[{"raw":"configLiteral"},{"raw":"callbackLiteral"},"primary"]"#,
+        "--private-key",
+        "0x9999",
+        "AdvancedCounter",
+    ]);
+
+    generate_cmd
+        .assert()
+        .success()
+        .stdout(contains("Generated script at script/AdvancedCounter.s.sol"));
+
+    let script_path = project.child("script/AdvancedCounter.s.sol");
+    script_path.assert(predicate::path::exists());
+    let contents = std::fs::read_to_string(script_path.path())?;
+
+    assert!(contents.contains("new AdvancedCounter(configLiteral, callbackLiteral, \"primary\");"));
+
+    Ok(())
+}

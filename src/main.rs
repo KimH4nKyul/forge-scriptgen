@@ -39,7 +39,11 @@ fn run() -> CliResult<()> {
         ));
     }
 
-    let contracts = discover_contracts(&root, &contracts_dir)?;
+    let contracts = discover_contracts_with_parser(
+        &root,
+        &contracts_dir,
+        parser_for_backend(options.parser_backend),
+    )?;
 
     if contracts.is_empty() {
         println!(
@@ -129,6 +133,7 @@ fn run() -> CliResult<()> {
 struct Options {
     contracts_dir: PathBuf,
     output_dir: PathBuf,
+    parser_backend: ParserBackend,
     selection: Option<String>,
     args_json: Option<String>,
     list: bool,
@@ -168,10 +173,40 @@ impl ContractInfo {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+enum ParserBackend {
+    #[default]
+    StringWalker,
+}
+
+impl ParserBackend {
+    fn parse(value: &str) -> CliResult<Self> {
+        match value {
+            "string-walker" => Ok(Self::StringWalker),
+            other => Err(format!(
+                "Unknown parser backend '{other}'. Available backends: string-walker"
+            )),
+        }
+    }
+}
+
+trait ContractParser {
+    fn parse(&self, source: &str) -> CliResult<Vec<ParsedContract>>;
+}
+
+struct StringWalkerParser;
+
+impl ContractParser for StringWalkerParser {
+    fn parse(&self, source: &str) -> CliResult<Vec<ParsedContract>> {
+        Ok(parse_contracts_with_string_walker(source))
+    }
+}
+
 fn parse_args(args: &[String]) -> CliResult<Options> {
     let mut options = Options {
         contracts_dir: PathBuf::from("src"),
         output_dir: PathBuf::from("script"),
+        parser_backend: ParserBackend::default(),
         ..Options::default()
     };
 
@@ -207,6 +242,19 @@ fn parse_args(args: &[String]) -> CliResult<Options> {
                     return Err("--output-dir requires a value".to_string());
                 }
                 options.output_dir = PathBuf::from(dir);
+            }
+            "--parser" => {
+                let value = iter
+                    .next()
+                    .ok_or_else(|| "--parser requires a value".to_string())?;
+                options.parser_backend = ParserBackend::parse(value)?;
+            }
+            value if value.starts_with("--parser=") => {
+                let parser_value = &value["--parser=".len()..];
+                if parser_value.is_empty() {
+                    return Err("--parser requires a value".to_string());
+                }
+                options.parser_backend = ParserBackend::parse(parser_value)?;
             }
             "--args" => {
                 let value = iter
@@ -264,8 +312,9 @@ fn print_help(program: &str) {
     println!("Options:");
     println!("  --contracts-dir <DIR>   Directory containing Solidity sources (default: src)");
     println!("  --output-dir <DIR>      Directory for generated scripts (default: script)");
+    println!("  --parser <NAME>         Contract parser backend (default: string-walker)");
     println!(
-        r#"  --args <JSON>           Constructor arguments as JSON array, e.g. --args '[42,"0xdead"]'"#
+        "  --args <JSON>           Constructor arguments as JSON array; use {{\"raw\":\"...\"}} for Solidity literals"
     );
     println!("  --private-key <KEY>     Private key literal to embed in the script");
     println!("  --list                  List discoverable contracts and exit");
@@ -277,7 +326,11 @@ fn print_help(program: &str) {
     println!("  {program} --args '[\"hello\", 10]' --private-key 0xabc src/Counter.sol");
 }
 
-fn discover_contracts(root: &Path, contracts_dir: &Path) -> CliResult<Vec<ContractInfo>> {
+fn discover_contracts_with_parser(
+    root: &Path,
+    contracts_dir: &Path,
+    parser: &dyn ContractParser,
+) -> CliResult<Vec<ContractInfo>> {
     let mut files = Vec::new();
     collect_solidity_files(contracts_dir, &mut files)?;
     files.sort();
@@ -294,7 +347,7 @@ fn discover_contracts(root: &Path, contracts_dir: &Path) -> CliResult<Vec<Contra
             .to_path_buf();
 
         let pragma = extract_pragma(&source);
-        let parsed = parse_contracts_from_source(&source);
+        let parsed = parser.parse(&source)?;
 
         for item in parsed {
             contracts.push(ContractInfo {
@@ -308,6 +361,14 @@ fn discover_contracts(root: &Path, contracts_dir: &Path) -> CliResult<Vec<Contra
     }
 
     Ok(contracts)
+}
+
+fn parser_for_backend(backend: ParserBackend) -> &'static dyn ContractParser {
+    static STRING_WALKER: StringWalkerParser = StringWalkerParser;
+
+    match backend {
+        ParserBackend::StringWalker => &STRING_WALKER,
+    }
 }
 
 fn collect_solidity_files(dir: &Path, files: &mut Vec<PathBuf>) -> CliResult<()> {
@@ -344,7 +405,7 @@ struct ParsedContract {
     constructor_params: Vec<ConstructorParam>,
 }
 
-fn parse_contracts_from_source(source: &str) -> Vec<ParsedContract> {
+fn parse_contracts_with_string_walker(source: &str) -> Vec<ParsedContract> {
     let stripped = strip_comments(source);
     let mut contracts = Vec::new();
     let keyword = "contract";
@@ -624,7 +685,37 @@ fn parse_args_json(input: &str) -> CliResult<Vec<String>> {
         .as_array()
         .ok_or_else(|| "--args expects a JSON array, e.g. '[42, \"0xdead\"]'".to_string())?;
 
-    Ok(array.iter().map(|item| item.to_string()).collect())
+    array.iter().map(parse_json_arg_value).collect()
+}
+
+fn parse_json_arg_value(value: &Value) -> CliResult<String> {
+    match value {
+        Value::Null => Err(
+            "Null is not a valid Solidity constructor argument. Use a Solidity literal instead."
+                .to_string(),
+        ),
+        Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Array(_) => {
+            Ok(value.to_string())
+        }
+        Value::Object(map) => {
+            let raw = map
+                .get("raw")
+                .or_else(|| map.get("solidity"))
+                .and_then(Value::as_str);
+
+            if let Some(raw) = raw {
+                if raw.trim().is_empty() {
+                    return Err("Raw Solidity literal cannot be empty.".to_string());
+                }
+                return Ok(raw.to_string());
+            }
+
+            Err(
+                "JSON objects are only supported as raw Solidity literals, e.g. {\"raw\":\"Foo({bar: 1})\"}."
+                    .to_string(),
+            )
+        }
+    }
 }
 
 fn prompt_for_args(contract: &ContractInfo) -> CliResult<Vec<String>> {
@@ -1089,7 +1180,7 @@ mod tests {
                 constructor() {}
             }
         "#;
-        let contracts = parse_contracts_from_source(source);
+        let contracts = parse_contracts_with_string_walker(source);
         assert_eq!(contracts.len(), 1);
         assert_eq!(contracts[0].name, "Concrete");
     }
@@ -1104,10 +1195,75 @@ mod tests {
                 constructor() {}
             }
         "#;
-        let contracts = parse_contracts_from_source(source);
+        let contracts = parse_contracts_with_string_walker(source);
         assert_eq!(contracts.len(), 2);
         assert_eq!(contracts[0].name, "First");
         assert_eq!(contracts[1].name, "Second");
+    }
+
+    #[test]
+    fn parses_complex_contract_with_modifiers_structs_and_assembly() {
+        let source = r#"
+            pragma solidity ^0.8.24;
+
+            interface ICounter {
+                function increment() external;
+            }
+
+            library MathLib {
+                function scale(uint256 value) internal pure returns (uint256) {
+                    return value * 2;
+                }
+            }
+
+            abstract contract BaseDeployer {
+                constructor(address admin) {}
+            }
+
+            contract AdvancedCounter is BaseDeployer {
+                struct Config {
+                    address owner;
+                    uint256[] limits;
+                }
+
+                error InvalidConfig(string reason);
+
+                constructor(
+                    Config memory config,
+                    function(address, uint256[] memory) external returns (bytes32) callback,
+                    string memory label
+                )
+                    BaseDeployer(config.owner)
+                    payable
+                {
+                    if (bytes(label).length == 0) {
+                        revert InvalidConfig("missing label");
+                    }
+
+                    assembly {
+                        let slot := mload(0x40)
+                        mstore(slot, 1)
+                    }
+                }
+            }
+        "#;
+
+        let contracts = parse_contracts_with_string_walker(source);
+        assert_eq!(contracts.len(), 1);
+        assert_eq!(contracts[0].name, "AdvancedCounter");
+        assert_eq!(contracts[0].constructor_params.len(), 3);
+        assert_eq!(
+            contracts[0].constructor_params[0].raw,
+            "Config memory config"
+        );
+        assert_eq!(
+            contracts[0].constructor_params[1].name.as_deref(),
+            Some("callback")
+        );
+        assert_eq!(
+            contracts[0].constructor_params[2].name.as_deref(),
+            Some("label")
+        );
     }
 
     #[test]
@@ -1134,5 +1290,25 @@ mod tests {
         assert!(stripped.contains("// not comment"));
         assert!(!stripped.contains("// comment"));
         assert!(!stripped.contains("block comment"));
+    }
+
+    #[test]
+    fn parser_backend_accepts_known_value() {
+        assert_eq!(
+            ParserBackend::parse("string-walker").unwrap(),
+            ParserBackend::StringWalker
+        );
+    }
+
+    #[test]
+    fn parse_args_json_supports_raw_solidity_literals() {
+        let args = parse_args_json(
+            r#"[{"raw":"Config({owner: msg.sender, limits: [1, 2]})"},{"solidity":"callback"},"label"]"#,
+        )
+        .unwrap();
+
+        assert_eq!(args[0], "Config({owner: msg.sender, limits: [1, 2]})");
+        assert_eq!(args[1], "callback");
+        assert_eq!(args[2], "\"label\"");
     }
 }
