@@ -53,9 +53,26 @@ Why this matters:
   - generates a deployment script from mixed raw and JSON string arguments
   - verifies the final constructor call in the generated script
 
+### Reproducible CLI Fixtures
+- Added persistent Solidity fixtures under [tests/fixtures/repro/src](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/src) so the manual complex-contract validation can be reproduced without relying on temporary files.
+- Added expected generated script outputs under [tests/fixtures/repro/expected](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/expected).
+- Added an end-to-end reproduction script at [scripts/reproduce_complex_cli_demo.sh](/Users/kimh4nkyul/Projects/forge-scriptgen/scripts/reproduce_complex_cli_demo.sh).
+- Added fixture usage notes in [README.md](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/README.md).
+
+What the reproduction script does:
+- prints the complex Solidity source fixtures
+- runs `forge-scriptgen` against them
+- prints the generated `.s.sol` files
+- compares generated output against the expected fixtures with `diff`
+
+Why this matters:
+- It turns the ad-hoc manual validation into a repeatable regression check.
+- It preserves concrete examples of the Solidity patterns the current parser is expected to support.
+
 ### Validation
 - Ran `cargo fmt`
 - Ran `cargo test`
+- Ran `./scripts/reproduce_complex_cli_demo.sh`
 - Result: all tests passed, including unit and CLI integration tests
 
 ### Example
@@ -71,3 +88,9 @@ cargo run -- \
 - [src/main.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/src/main.rs)
 - [tests/cli.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/cli.rs)
 - [AGENTS.md](/Users/kimh4nkyul/Projects/forge-scriptgen/AGENTS.md)
+- [scripts/reproduce_complex_cli_demo.sh](/Users/kimh4nkyul/Projects/forge-scriptgen/scripts/reproduce_complex_cli_demo.sh)
+- [README.md](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/README.md)
+- [ComplexDeployment.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/src/nested/ComplexDeployment.sol)
+- [CommentsAndStrings.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/src/CommentsAndStrings.sol)
+- [ComplexDeployment.s.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/expected/ComplexDeployment.s.sol)
+- [CommentsAndStrings.s.sol](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/expected/CommentsAndStrings.s.sol)
