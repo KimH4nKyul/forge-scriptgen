@@ -1,9 +1,9 @@
-# Changelogs
+# Changelog
 
 ## 2026-03-10
 
 ### Summary
-This update advances the repository along the direction proposed in `FUTURE_WORK.md`, with an immediate focus on handling more complex Solidity code safely and preparing the parser for future backend upgrades.
+This update moves the project toward the roadmap in `FUTURE_WORK.md`, with immediate emphasis on handling complex Solidity code more reliably and preparing the CLI for future parser backends.
 
 ### Parser Architecture
 - Introduced a parser abstraction layer in [src/main.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/src/main.rs).
@@ -53,7 +53,7 @@ Why this matters:
   - generates a deployment script from mixed raw and JSON string arguments
   - verifies the final constructor call in the generated script
 
-### Reproducible CLI Fixtures
+### Reproducible CLI fixtures
 - Added persistent Solidity fixtures under [tests/fixtures/repro/src](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/src) so the manual complex-contract validation can be reproduced without relying on temporary files.
 - Added expected generated script outputs under [tests/fixtures/repro/expected](/Users/kimh4nkyul/Projects/forge-scriptgen/tests/fixtures/repro/expected).
 - Added an end-to-end reproduction script at [scripts/reproduce_complex_cli_demo.sh](/Users/kimh4nkyul/Projects/forge-scriptgen/scripts/reproduce_complex_cli_demo.sh).
