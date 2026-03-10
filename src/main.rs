@@ -321,9 +321,12 @@ fn print_help(program: &str) {
     println!("  --force                 Overwrite existing script when it already exists");
     println!("  -h, --help              Show this help message");
     println!("\nExamples:");
-    println!("  {program} --list");
+    println!("  {program} --parser string-walker --list");
     println!("  {program} Counter");
     println!("  {program} --args '[\"hello\", 10]' --private-key 0xabc src/Counter.sol");
+    println!(
+        "  {program} --parser string-walker --args '[{{\"raw\":\"Config({{owner: msg.sender, limits: [1, 2, 3]}})\"}},{{\"raw\":\"callback\"}},\"primary\",{{\"raw\":\"hex\\\"1234\\\"\"}}]' --private-key 0xabc123 ComplexDeployment"
+    );
 }
 
 fn discover_contracts_with_parser(

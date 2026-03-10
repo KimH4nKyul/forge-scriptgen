@@ -42,6 +42,13 @@ Why this matters:
 - Updated help text to document:
   - the new `--parser` option
   - raw literal usage for `--args`
+- Refreshed the `Examples:` section so the live `--help` output now shows:
+  - `forge-scriptgen --parser string-walker --list`
+  - a complex constructor example using `{"raw":"..."}` literals
+
+Why this matters:
+- The installed CLI help now reflects the actual supported workflows instead of only the earlier minimal examples.
+- Users can discover the complex-constructor path directly from `forge-scriptgen --help` without opening the README.
 
 ### Test Coverage Added
 - Added unit tests in [src/main.rs](/Users/kimh4nkyul/Projects/forge-scriptgen/src/main.rs) for:
@@ -73,6 +80,8 @@ Why this matters:
 - Ran `cargo fmt`
 - Ran `cargo test`
 - Ran `./scripts/reproduce_complex_cli_demo.sh`
+- Reinstalled the global CLI with `cargo install --path . --force`
+- Verified the live `forge-scriptgen --help` output after reinstall
 - Result: all tests passed, including unit and CLI integration tests
 
 ### Example
