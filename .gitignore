@@ -1,4 +1,6 @@
 .idea/
 /target
 
+
+.DS_Store
 Cargo.lock
